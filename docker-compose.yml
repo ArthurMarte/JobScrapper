@@ -1,0 +1,69 @@
+# Define todos os serviços (containers) da aplicação
+services:
+
+  db:
+    # Imagem oficial do PostgreSQL 16 em versão Alpine
+    # Alpine = Linux minimalista, imagem muito menor que a versão padrão
+    image: postgres:16-alpine
+    # Variáveis de ambiente que o PostgreSQL usa para se configurar
+    # São equivalentes a parâmetros de inicialização do banco
+    environment:
+      POSTGRES_USER: scrapper      # usuário que será criado
+      POSTGRES_PASSWORD: scrapper  # senha desse usuário
+      POSTGRES_DB: jobsscrapper    # banco de dados que será criado
+    # Mapeia porta do container para porta da sua máquina
+    # "maquina:container" → 5432:5432
+    # Isso permite conectar no banco pelo DBeaver/psql direto da sua máquina
+    ports:
+      - "5432:5432"
+    # Volume nomeado para persistir os dados do banco
+    # Sem isso, todos os dados seriam perdidos ao reiniciar o container
+    # "pgdata" é o nome do volume (definido lá embaixo)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Healthcheck: verifica se o Postgres está realmente pronto
+    # O Docker considera o container "healthy" só quando esse comando
+    # retornar sucesso — evita que a API suba antes do banco estar pronto
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scrapper"]
+      interval: 5s   # testa a cada 5 segundos
+      retries: 5     # tenta 5 vezes antes de considerar "unhealthy"
+
+
+  api:
+    # "build: ." significa "construa a imagem usando o Dockerfile
+    # que está na pasta atual (raiz do projeto)"
+    build: .
+    # Carrega as variáveis de ambiente do arquivo .env
+    # É aqui que entram DATABASE_URL, LOG_LEVEL, etc.
+    # O .env NUNCA vai para o git — fica só na sua máquina
+    env_file: .env
+    # Só sobe a API depois que o banco estiver healthy
+    # Sem isso, a API tentaria conectar num banco que ainda não está pronto
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # Sobrescreve o CMD do Dockerfile
+    # Primeiro roda as migrations do banco, depois sobe a API
+    # --reload → reinicia automaticamente quando você salva um arquivo
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  scraper:
+    build: .
+    env_file: .env
+    # Scraper também depende do banco estar pronto
+    # afinal ele vai gravar dados lá
+    depends_on:
+      db:
+        condition: service_healthy
+    # Comando diferente do da API — roda o script do scraper
+    command: python -m scripts.run_scraper
+
+# Define os volumes nomeados usados pelos serviços acima
+# O Docker gerencia onde esses dados ficam armazenados na sua máquina
+volumes:
+  pgdata:
