@@ -10,7 +10,7 @@ services:
     environment:
       POSTGRES_USER: scrapper      # usuário que será criado
       POSTGRES_PASSWORD: scrapper  # senha desse usuário
-      POSTGRES_DB: jobsscrapper    # banco de dados que será criado
+      POSTGRES_DB: jobscrapper    # banco de dados que será criado
     # Mapeia porta do container para porta da sua máquina
     # "maquina:container" → 5432:5432
     # Isso permite conectar no banco pelo DBeaver/psql direto da sua máquina
@@ -25,7 +25,7 @@ services:
     # O Docker considera o container "healthy" só quando esse comando
     # retornar sucesso — evita que a API suba antes do banco estar pronto
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U scrapper"]
+      test: ["CMD-SHELL", "pg_isready -U scrapper -d jobscrapper -h localhost"]
       interval: 5s   # testa a cada 5 segundos
       retries: 5     # tenta 5 vezes antes de considerar "unhealthy"
 
@@ -40,6 +40,8 @@ services:
     env_file: .env
     # Só sobe a API depois que o banco estiver healthy
     # Sem isso, a API tentaria conectar num banco que ainda não está pronto
+    volumes:
+      - .:/app  # Mapeia a pasta atual para /app no container (hot reload)
     depends_on:
       db:
         condition: service_healthy
@@ -55,6 +57,8 @@ services:
   scraper:
     build: .
     env_file: .env
+    volumes:
+      - .:/app  # Mapeia a pasta atual para /app no container (hot reload)
     # Scraper também depende do banco estar pronto
     # afinal ele vai gravar dados lá
     depends_on:
@@ -62,6 +66,20 @@ services:
         condition: service_healthy
     # Comando diferente do da API — roda o script do scraper
     command: python -m scripts.run_scraper
+
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    # Credenciais de acesso à interface web do pgAdmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"  # acessa em http://localhost:5050
+    # Só sobe depois que o banco estiver healthy
+    depends_on:
+      db:
+        condition: service_healthy
 
 # Define os volumes nomeados usados pelos serviços acima
 # O Docker gerencia onde esses dados ficam armazenados na sua máquina
