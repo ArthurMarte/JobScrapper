@@ -32,7 +32,6 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 # Função geradora que cria uma sessão e garante que ela será fechada
-# É usada como dependência no FastAPI (você vai ver isso na Parte da API)
 #
 # O "yield" faz dela um context manager:
 # - tudo antes do yield → abre a sessão
