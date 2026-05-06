@@ -1,3 +1,6 @@
+# Camada de transporte HTTP — configura e executa requisições de forma assíncrona
+# O client.py é o meio de transporte — ele sabe como fazer requisições HTTP de forma segura e resiliente, mas não sabe o que fazer com o conteúdo que recebe.
+
 import httpx
 from tenacity import retry, wait_exponential, stop_after_attempt
 import structlog
