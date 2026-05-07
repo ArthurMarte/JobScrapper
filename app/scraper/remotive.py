@@ -1,6 +1,8 @@
 # A função get_jobs recebe o JSON da API do Remotive e 
 # extrai as informações relevantes em um formato consistente para o nosso modelo de dados.
 
+from datetime import datetime
+
 def get_jobs(data: dict) -> list[dict]:
     jobs = []
 
@@ -14,7 +16,7 @@ def get_jobs(data: dict) -> list[dict]:
             "salary": job.get("salary"),
             "description": job.get("description"),
             "url": job.get("url"),
-            "published_at": job.get("publication_date"),
+            "published_at": datetime.fromisoformat(job.get("publication_date")) if job.get("publication_date") else None,
         })
 
     return jobs
