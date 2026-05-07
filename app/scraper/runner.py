@@ -3,14 +3,14 @@ from app.scraper.remotive import get_jobs
 from app.repositories.job_repo import JobRepository
 import structlog
 import asyncio
+from app.db.session import AsyncSessionLocal
 
 logger = structlog.get_logger("scraper_runner")
 
 
 class ScraperRunner:
-    def __init__(self, client: AsyncScraperClient, repo: JobRepository):
+    def __init__(self, client: AsyncScraperClient):
         self.client = client
-        self.repo = repo
 
     async def run(self):
         logger.info("Starting scraper runner")
@@ -22,9 +22,12 @@ class ScraperRunner:
 
         # Função interna que envolve o upsert com o controle do semaphore
         # "async with semaphore" → aguarda uma vaga livre antes de executar
+        # Cada upsert abre sua própria sessão do banco, garantindo isolamento e evitando bloqueios
         async def upsert_with_semaphore(job_data):
             async with semaphore:
-                await self.repo.upsert(job_data)
+                async with AsyncSessionLocal() as session:
+                    repo = JobRepository(session)
+                    await repo.upsert(job_data)
 
         try:
             # Faz a requisição para a API do Remotive
