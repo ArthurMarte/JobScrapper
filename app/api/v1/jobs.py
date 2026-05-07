@@ -26,7 +26,7 @@ async def get_job(job_id: int, db: AsyncSession = Depends(get_db)):
 
     # Retorna o objeto Job — o FastAPI converte para JobOut automaticamente
     # graças ao response_model e ao model_config = ConfigDict(from_attributes=True)
-    return job
+    return job 
 
 
 
