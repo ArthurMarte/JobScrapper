@@ -4,11 +4,12 @@ from app.repositories.job_repo import JobRepository
 import structlog
 import asyncio
 from app.db.session import AsyncSessionLocal
+from app.scraper.base_runner import BaseRunner
 
 logger = structlog.get_logger("scraper_runner")
 
 
-class ScraperRunner:
+class RemotiveRunner (BaseRunner):
     def __init__(self, client: AsyncScraperClient):
         self.client = client
 

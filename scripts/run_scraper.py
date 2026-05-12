@@ -1,4 +1,4 @@
-from app.scraper.runner import ScraperRunner
+from app.scraper.remotive_runner import RemotiveRunner
 from app.scraper.client import AsyncScraperClient
 from app.db.session import AsyncSessionLocal
 import asyncio
@@ -11,7 +11,7 @@ async def main():
     # Abre uma sessão do banco e garante que será fechada ao final
     # mesmo se der erro — equivalente ao get_session do FastAPI
     async with AsyncSessionLocal() as session:
-        runner = ScraperRunner(client=client)
+        runner = RemotiveRunner(client=client)
         await runner.run()
 
 
