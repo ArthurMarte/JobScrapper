@@ -16,8 +16,8 @@ def parse_listing(html: str) -> list[str]:
         link = elem.css_first("a.listing-link--unlocked")
         href = link.attributes.get("href") if link else None
 
-        link_element = "https://weworkremotely.com" + href if href else None
-        final_link.append(link_element)
+        if href:
+            final_link.append(href)
 
     return final_link
 

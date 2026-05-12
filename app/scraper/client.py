@@ -13,15 +13,30 @@ class AsyncScraperClient:
         # http2=True para usar HTTP/2, que é mais eficiente
         # User-Agent é uma boa prática para evitar bloqueios por parte dos sites — identifica nosso scraper de forma amigável
         # _client é uma conexão HTTP assíncrona que podemos reutilizar para várias requisições, melhorando performance
-        self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout, headers={"User-Agent": "JobsScrapper/1.0"}, http2=True)
+        self._client = httpx.AsyncClient(
+            base_url=base_url,
+            timeout=timeout,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                )
+            },
+            http2=True,
+        )
 
     # @retry → tenta novamente se falhar, com espera exponencial (2s, 4s, 8s...) até 10s, parando após 3 tentativas
     @retry(wait=wait_exponential(min=2, max=10), stop=stop_after_attempt(3))
     async def get(self, path:str) -> httpx.Response:
         logger.info("ScraperClient GET", path=path)
-        response = await self._client.get(path) # Faz a requisição GET para o caminho especificado
-        response.raise_for_status() # Lança um erro se a resposta tiver status de erro (4xx ou 5xx)
-        return response
+        try:
+            response = await self._client.get(path) # Faz a requisição GET para o caminho especificado
+            response.raise_for_status() # Lança um erro se a resposta tiver status de erro (4xx ou 5xx)
+            return response
+        except httpx.HTTPError as e:
+            logger.error("HTTP error during GET request", path=path, error=str(e))
+            raise # Re-levanta o erro para que o @retry possa tentar novamente
     
 
     async def aclose(self):
